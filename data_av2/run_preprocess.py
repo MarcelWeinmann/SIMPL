@@ -45,10 +45,6 @@ def load_seq_save_features(args: Any, start_idx: int, batch_size: int, sequences
 
     # Enumerate over the batch starting at start_idx
     for idx, seq_id in enumerate(sequences[start_idx:start_idx + batch_size]):
-        # print(idx, ' - seq_id: ', seq_id)
-        if not len(seq_id) == 36:
-            print('[WARN] seq_id length error: ', seq_id)
-            continue
 
         seq_path = os.path.join(args.data_dir, seq_id)
 
