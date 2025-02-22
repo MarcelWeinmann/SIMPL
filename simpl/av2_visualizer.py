@@ -17,8 +17,8 @@ _ESTIMATED_BUS_WIDTH_M = 2.1
 
 
 class Visualizer():
-    def __init__(self):
-        self.map_vis = AV2MapVisualizer()
+    def __init__(self, dataset_path):
+        self.map_vis = AV2MapVisualizer(dataset_path)
 
     def draw_once(self, post_out, data, eval_out, show_map=False, test_mode=False, split='val'):
         batch_size = len(data['SEQ_ID'])
@@ -197,4 +197,5 @@ class Visualizer():
         #     ax.plot(ctrs_tmp[:, 0], ctrs_tmp[:, 1], alpha=0.1, color='grey', linestyle='--')
 
         plt.tight_layout()
-        plt.show()
+        os.makedirs("/dev_ws/src/tam_deep_prediction/data/debug", exist_ok=True)
+        plt.savefig(f"/dev_ws/src/tam_deep_prediction/data/debug/eval_{seq_id}.png")

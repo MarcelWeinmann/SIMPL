@@ -8,7 +8,7 @@ from utils.vis_utils import ArgoMapVisualizer
 
 
 class Visualizer():
-    def __init__(self):
+    def __init__(self, dataset_path):
         self.map_vis = ArgoMapVisualizer()
 
     def draw_once(self, post_out, data, eval_out, show_map=False, test_mode=False, split='val'):

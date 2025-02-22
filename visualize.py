@@ -29,6 +29,7 @@ def parse_arguments() -> Any:
     parser.add_argument("--data_aug", action="store_true", help="Enable data augmentation")
     parser.add_argument("--adv_cfg_path", required=True, default="", type=str)
     parser.add_argument("--model_path", required=False, type=str, help="path to the saved model")
+    parser.add_argument("--dataset_path", required=False, type=str, help="path to the dataset")
     #
     parser.add_argument("--seq_id", default=-1, type=int, help="Selected sequence ID")
     parser.add_argument("--shuffle", action="store_true", help="Shuffle order")
@@ -50,7 +51,7 @@ def main():
 
     vis_file, vis_name = args.visualizer.split(':')
     print('[Loader] load visualizer {} from {}'.format(vis_name, vis_file))
-    vis = getattr(import_module(vis_file), vis_name)()
+    vis = getattr(import_module(vis_file), vis_name)(args.dataset_path)
 
     if args.mode != 'test':
         loader = Loader(args, device, is_ddp=False)

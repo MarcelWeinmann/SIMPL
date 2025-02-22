@@ -277,8 +277,11 @@ class ArgoMapVisualizer:
 
 
 class AV2MapVisualizer:
-    def __init__(self):
-        self.dataset_dir = os.path.expanduser('~') + '/data/dataset/argoverse2/'
+    def __init__(self, dataset_path):
+        if dataset_path is not None:
+            self.dataset_dir = dataset_path
+        else:
+            self.dataset_dir = '/dev_ws/src/tam_deep_prediction/data/raceverse-mini-v1'
 
     def show_map(self,
                  ax,
