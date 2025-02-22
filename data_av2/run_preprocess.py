@@ -52,7 +52,7 @@ def load_seq_save_features(args: Any, start_idx: int, batch_size: int, sequences
         scenario = scenario_serialization.load_argoverse_scenario_parquet(scenario_path)
 
         static_map_path = Path(seq_path + f"/log_map_archive_{seq_id}.json")
-        static_map = ArgoverseStaticMap.from_json(static_map_path)
+        static_map = ArgoverseStaticMap.from_json(static_map_path, False)
 
         data, headers = dataset.process(seq_id, scenario, static_map)
 
