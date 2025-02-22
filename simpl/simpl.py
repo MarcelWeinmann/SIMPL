@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from fractions import gcd
+from math import gcd
 #
 import torch
 from torch import Tensor, nn
