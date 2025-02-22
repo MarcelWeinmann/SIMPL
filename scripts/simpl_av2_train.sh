@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python train.py \
+CUDA_VISIBLE_DEVICES=0 python3 train.py \
   --features_dir data_av2/features/ \
   --train_batch_size 4 \
   --val_batch_size 4 \
