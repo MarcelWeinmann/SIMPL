@@ -351,7 +351,8 @@ class AV2MapVisualizer:
         # ax.set_facecolor("grey")
 
         static_map_path = Path(self.dataset_dir + f"/{split}/{seq_id}" + f"/log_map_archive_{seq_id}.json")
-        static_map = ArgoverseStaticMap.from_json(static_map_path)
+        static_map = ArgoverseStaticMap.from_json(static_map_path,
+                                                  overwrite_centerline=False)
 
         # ~ drivable area
         for drivable_area in static_map.vector_drivable_areas.values():
@@ -366,7 +367,7 @@ class AV2MapVisualizer:
             ax.fill(polygon[:, 0], polygon[:, 1], color='whitesmoke', alpha=1.0, edgecolor=None, zorder=0)
 
             # centerline
-            centerline = static_map.get_lane_segment_centerline(lane_id)[:, 0:2]  # use xy
+            centerline = lane_segment.centerline.xyz[:, 0:2]  # use xy
             ax.plot(centerline[:, 0], centerline[:, 1], alpha=0.1, color='grey', linestyle='dotted', zorder=1)
 
             # lane boundary

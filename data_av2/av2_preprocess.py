@@ -30,7 +30,7 @@ class ArgoPreprocAV2():
 
         self.FAR_DIST_THRES = 20.0
 
-        self.SEG_LENGTH = 15.0  # approximated lane segment length
+        self.SEG_LENGTH = 2.0  # prev: 15.0 # approximated lane segment length
         self.SEG_N_NODE = 10
 
         if self.debug:
@@ -313,13 +313,11 @@ class ArgoPreprocAV2():
                        static_map: ArgoverseStaticMap):
         node_ctrs, node_vecs, lane_type, intersect, cross_left, cross_right, left, right = [], [], [], [], [], [], [], []
         lane_ctrs, lane_vecs = [], []
-        NUM_SEG_POINTS = 10
+        # NUM_SEG_POINTS = 10
 
         for lane_id, lane in static_map.vector_lane_segments.items():
-            # get lane centerline
-            cl_raw = static_map.get_lane_segment_centerline(lane_id)[:, 0:2]  # use xy
-            assert cl_raw.shape[0] == NUM_SEG_POINTS, "[Error] Wrong num of points in lane - {}:{}".format(
-                lane_id, cl_raw.shape[0])
+            # either get the centerline or raceline (depending on the overwrite in run_preprocess.py)
+            cl_raw = lane.centerline.xyz[:, 0:2]
 
             cl_ls = LineString(cl_raw)
             num_segs = np.max([int(np.floor(cl_ls.length / self.SEG_LENGTH)), 1])
