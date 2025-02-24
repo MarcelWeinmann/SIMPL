@@ -173,7 +173,7 @@ class ArgoPreprocAV2():
         map_pts = []
         for lane_id, lane in static_map.vector_lane_segments.items():
             # get lane centerline
-            cl = static_map.get_lane_segment_centerline(lane_id)[:, 0:2]  # use xy
+            cl = lane.centerline.xyz[:, 0:2]
             # print(cl.shape)
             map_pts.append(cl)
         map_pts = np.concatenate(map_pts, axis=0)  # [N_{map}, 2]
