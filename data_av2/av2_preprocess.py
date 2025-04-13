@@ -184,13 +184,15 @@ class ArgoPreprocAV2():
         trajs_tid, trajs_cat = list(), list()  # track id and category
         for k, ind in enumerate(sorted_idcs):
             track = scenario.tracks[ind]
-
+            track.object_states = [x for x in track.object_states if x.timestep < self.args.obs_len + self.args.pred_len]
             traj_ts = np.array([x.timestep for x in track.object_states], dtype=np.int16)  # [N_{frames}]
             traj_pos = np.array([list(x.position) for x in track.object_states])  # [N_{frames}, 2]
             traj_ang = np.array([x.heading for x in track.object_states])  # [N_{frames}]
             traj_vel = np.array([list(x.velocity) for x in track.object_states])  # [N_{frames}, 2]
 
             # * only contains future part
+            if np.shape(track.object_states)[0] == 0:
+                continue
             if traj_ts[0] > ts_obs:
                 continue
             # * not observed at ts_obs
