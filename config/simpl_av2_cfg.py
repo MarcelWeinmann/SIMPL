@@ -87,7 +87,7 @@ class AdvCfg():
         eval_cfg = dict()
         eval_cfg['evaluator'] = 'utils.evaluator:TrajPredictionEvaluator'
         eval_cfg['data_ver'] = 'av2'
-        eval_cfg['miss_thres'] = 5.0
+        eval_cfg['miss_thres'] = 2.0
 
         eval_cfg.update(self.g_cfg)  # append global config
         return eval_cfg
