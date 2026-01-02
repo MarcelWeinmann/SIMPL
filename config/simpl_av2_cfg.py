@@ -7,7 +7,7 @@ class AdvCfg():
         self.g_cfg = dict()
         self.g_cfg['g_num_modes'] = 6
         self.g_cfg['g_obs_len'] = 20
-        self.g_cfg['g_pred_len'] = 40
+        self.g_cfg['g_pred_len'] = 80
 
     def get_dataset_cfg(self):
         data_cfg = dict()
