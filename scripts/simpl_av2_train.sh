@@ -1,9 +1,9 @@
 CUDA_VISIBLE_DEVICES=0 python3 train.py \
   --features_dir data_av2/features/ \
-  --train_batch_size 8 \
-  --val_batch_size 8 \
+  --train_batch_size 4 \
+  --val_batch_size 4 \
   --val_interval 2 \
-  --train_epoches 80 \
+  --train_epoches 800 \
   --data_aug \
   --use_cuda \
   --logger_writer \

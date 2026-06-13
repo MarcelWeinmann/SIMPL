@@ -19,10 +19,10 @@ class AdvCfg():
     def get_net_cfg(self):
         net_cfg = dict()
         net_cfg["network"] = "simpl.simpl:Simpl"
-        net_cfg["init_weights"] = True
+        net_cfg["init_weights"] = False
         net_cfg["in_actor"] = 14
         net_cfg["d_actor"] = 128
-        net_cfg["n_fpn_scale"] = 2
+        net_cfg["n_fpn_scale"] = 4
         net_cfg["in_lane"] = 16
         net_cfg["d_lane"] = 128
 
@@ -43,8 +43,8 @@ class AdvCfg():
     def get_loss_cfg(self):
         loss_cfg = dict()
         loss_cfg["loss_fn"] = "simpl.av2_loss_fn:LossFunc"
-        loss_cfg["cls_coef"] = 0.1
-        loss_cfg["reg_coef"] = 0.9
+        loss_cfg["cls_coef"] = 0.2
+        loss_cfg["reg_coef"] = 0.8
         loss_cfg["mgn"] = 0.2
         loss_cfg["cls_th"] = 2.0
         loss_cfg["cls_ignore"] = 0.2
@@ -77,7 +77,7 @@ class AdvCfg():
             opt_cfg['gamma'] = 0.1
         elif opt_cfg['scheduler'] == 'polyline':
             opt_cfg['init_lr'] = 1e-4
-            opt_cfg['milestones'] = [0, 5, 20, 45, 70]
+            opt_cfg['milestones'] = [0, 50, 200, 450, 700]
             opt_cfg['values'] = [1e-4, 1e-3, 1e-3, 1e-4, 1e-5]
 
         opt_cfg.update(self.g_cfg)  # append global config

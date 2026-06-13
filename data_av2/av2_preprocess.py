@@ -28,9 +28,9 @@ class ArgoPreprocAV2():
         self.viz = args.viz
         self.mode = args.mode
 
-        self.FAR_DIST_THRES = 20.0
+        self.FAR_DIST_THRES = 250.0
 
-        self.SEG_LENGTH = 2.0  # prev: 15.0 # approximated lane segment length
+        self.SEG_LENGTH = 15.0 # approximated lane segment length
         self.SEG_N_NODE = 10
 
         if self.debug:
