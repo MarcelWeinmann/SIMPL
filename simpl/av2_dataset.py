@@ -270,6 +270,7 @@ class AV2Dataset(Dataset):
             graphs[i]
                 node_ctrs           torch.Size([116, N_{pt}, 2])
                 node_vecs           torch.Size([116, N_{pt}, 2])
+                node_vels           torch.Size([116, N_{pt}])
                 intersect           torch.Size([116, N_{pt}])
                 lane_type           torch.Size([116, N_{pt}, 3])
                 cross_left          torch.Size([116, N_{pt}, 3])
@@ -290,7 +291,7 @@ class AV2Dataset(Dataset):
         # print('lane_idcs: ', lane_idcs)
 
         graph = dict()
-        for key in ["node_ctrs", "node_vecs", "intersect", "lane_type", "cross_left", "cross_right", "left", "right"]:
+        for key in ["node_ctrs", "node_vecs", "node_vels", "intersect", "lane_type", "cross_left", "cross_right", "left", "right"]:
             graph[key] = torch.cat([x[key] for x in graphs], 0)
             # print(key, graph[key].shape)
         for key in ["lane_ctrs", "lane_vecs"]:
@@ -299,6 +300,7 @@ class AV2Dataset(Dataset):
 
         lanes = torch.cat([graph['node_ctrs'],
                            graph['node_vecs'],
+                           graph['node_vels'].unsqueeze(2),
                            graph['intersect'].unsqueeze(2),
                            graph['lane_type'],
                            graph['cross_left'],

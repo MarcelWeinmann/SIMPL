@@ -23,7 +23,7 @@ class AdvCfg():
         net_cfg["in_actor"] = 14
         net_cfg["d_actor"] = 128
         net_cfg["n_fpn_scale"] = 4
-        net_cfg["in_lane"] = 16
+        net_cfg["in_lane"] = 17
         net_cfg["d_lane"] = 128
 
         net_cfg["d_rpe_in"] = 5

@@ -7,8 +7,12 @@ from shapely.geometry import LineString
 from av2.map.map_api import ArgoverseStaticMap
 from av2.map.lane_segment import LaneType, LaneMarkType
 from av2.datasets.motion_forecasting.data_schema import ArgoverseScenario, ObjectState, ObjectType, Track, TrackCategory
+from av2.geometry.interpolate import compute_midpoint_line
+
 #
 import init_path
+import torch
+
 
 _ESTIMATED_VEHICLE_LENGTH_M = 5.2
 _ESTIMATED_VEHICLE_WIDTH_M = 1.9
@@ -27,6 +31,8 @@ class ArgoPreprocAV2():
         self.debug = args.debug
         self.viz = args.viz
         self.mode = args.mode
+        self.use_raceline = args.use_raceline
+        self.use_raceline_velocity = args.use_raceline_velocity
 
         self.FAR_DIST_THRES = 250.0
 
@@ -174,7 +180,13 @@ class ArgoPreprocAV2():
         for lane_id, lane in static_map.vector_lane_segments.items():
             # get lane centerline
             cl = lane.centerline.xyz[:, 0:2]
-            # print(cl.shape)
+            if not self.use_raceline:
+                left_bnd = lane.left_lane_boundary.xyz[:, 0:2]
+                right_bnd = lane.right_lane_boundary.xyz[:, 0:2]
+                cl, _ = compute_midpoint_line(left_ln_boundary=left_bnd,
+                                              right_ln_boundary=right_bnd,
+                                              num_interp_pts=left_bnd.shape[0])
+                
             map_pts.append(cl)
         map_pts = np.concatenate(map_pts, axis=0)  # [N_{map}, 2]
         map_pts = np.expand_dims(map_pts, axis=0)  # [1, N_{map}, 2]
@@ -313,13 +325,24 @@ class ArgoPreprocAV2():
                        orig: np.ndarray,
                        rot: np.ndarray,
                        static_map: ArgoverseStaticMap):
-        node_ctrs, node_vecs, lane_type, intersect, cross_left, cross_right, left, right = [], [], [], [], [], [], [], []
+        node_ctrs, node_vecs, node_vels = [], [], [] # Added node_vels
+        lane_type, intersect, cross_left, cross_right, left, right = [], [], [], [], [], []
         lane_ctrs, lane_vecs = [], []
         # NUM_SEG_POINTS = 10
 
         for lane_id, lane in static_map.vector_lane_segments.items():
-            # either get the centerline or raceline (depending on the overwrite in run_preprocess.py)
-            cl_raw = lane.centerline.xyz[:, 0:2]
+            # Grab all 3 dimensions: x, y, and v (which acts as the z-axis here)
+            left_boundary = torch.from_numpy(lane.left_lane_boundary.xyz).float()
+            right_boundary = torch.from_numpy(lane.right_lane_boundary.xyz).float()
+            cl_raw = torch.from_numpy(
+                compute_midpoint_line(left_ln_boundary=left_boundary.numpy(),
+                                      right_ln_boundary=right_boundary.numpy(),
+                                      num_interp_pts=left_boundary.numpy().shape[0])[0]).float()
+            if self.use_raceline:
+                cl_raw = torch.from_numpy(lane.centerline.xyz).float()
+            if self.use_raceline_velocity and self.use_raceline:
+                cl_raw = torch.from_numpy(lane.centerline.xyzv[:, [0, 1, 3]]).float()
+                cl_raw[:, 2] = torch.clamp(cl_raw[:, 2], min=0.0) / 70.0
 
             cl_ls = LineString(cl_raw)
             num_segs = np.max([int(np.floor(cl_ls.length / self.SEG_LENGTH)), 1])
@@ -333,23 +356,39 @@ class ArgoPreprocAV2():
                 cl_pts = []
                 for s in np.linspace(s_lb, s_ub, num_sub_segs + 1):
                     cl_pts.append(cl_ls.interpolate(s))
-                ctrln = np.array(LineString(cl_pts).coords)  # [num_sub_segs + 1, 2]
-                ctrln = (ctrln - orig).dot(rot)  # to local frame
+                
+                # Returns shape [num_sub_segs + 1, 3] containing (x, y, v)
+                ctrln = np.array(LineString(cl_pts).coords)  
 
-                anch_pos = np.mean(ctrln, axis=0)
-                anch_vec = (ctrln[-1] - ctrln[0]) / np.linalg.norm(ctrln[-1] - ctrln[0])
+                # Separate geometry from the scalar velocity
+                ctrln_xy = ctrln[:, 0:2]
+                if self.use_raceline_velocity:
+                    ctrln_v = ctrln[:, 2]
+
+                # Transform spatial coords to local frame (leave velocity alone)
+                ctrln_xy = (ctrln_xy - orig).dot(rot)  
+
+                anch_pos = np.mean(ctrln_xy, axis=0)
+                anch_vec = (ctrln_xy[-1] - ctrln_xy[0]) / np.linalg.norm(ctrln_xy[-1] - ctrln_xy[0])
                 anch_rot = np.array([[anch_vec[0], -anch_vec[1]],
                                      [anch_vec[1], anch_vec[0]]])
 
                 lane_ctrs.append(anch_pos)
                 lane_vecs.append(anch_vec)
 
-                ctrln = (ctrln - anch_pos).dot(anch_rot)  # to instance frame
+                # Transform to instance frame
+                ctrln_xy = (ctrln_xy - anch_pos).dot(anch_rot)  
 
-                ctrs = np.asarray((ctrln[:-1] + ctrln[1:]) / 2.0, np.float32)
-                vecs = np.asarray(ctrln[1:] - ctrln[:-1], np.float32)
+                ctrs = np.asarray((ctrln_xy[:-1] + ctrln_xy[1:]) / 2.0, np.float32)
+                vecs = np.asarray(ctrln_xy[1:] - ctrln_xy[:-1], np.float32)
+                if self.use_raceline_velocity:
+                    vels = np.asarray((ctrln_v[:-1] + ctrln_v[1:]) / 2.0, np.float32) # Mid-point velocity
+                else:
+                    vels = np.zeros(vecs.shape[0], dtype=np.float32)
+
                 node_ctrs.append(ctrs)  # middle point
                 node_vecs.append(vecs)
+                node_vels.append(vels)  # reference velocity
 
                 # ~ lane type
                 lane_type_tmp = np.zeros(3)
@@ -430,14 +469,15 @@ class ArgoPreprocAV2():
         lane_idcs = []  # node belongs to which lane, e.g. [0   0   0 ... 122 122 122]
         for i, idcs in enumerate(node_idcs):
             lane_idcs.append(i * np.ones(len(idcs), np.int16))
-        # print("lane_idcs: ", lane_idcs.shape, lane_idcs)
 
         graph = dict()
         # geometry
         graph['node_ctrs'] = np.stack(node_ctrs, axis=0).astype(np.float32)
         graph['node_vecs'] = np.stack(node_vecs, axis=0).astype(np.float32)
+        graph['node_vels'] = np.stack(node_vels, axis=0).astype(np.float32) # Added to graph dictionary
         graph['lane_ctrs'] = np.array(lane_ctrs).astype(np.float32)
         graph['lane_vecs'] = np.array(lane_vecs).astype(np.float32)
+        
         # node features
         graph['lane_type'] = np.stack(lane_type, axis=0).astype(np.int16)
         graph['intersect'] = np.stack(intersect, axis=0).astype(np.int16)
@@ -446,14 +486,10 @@ class ArgoPreprocAV2():
         graph['left'] = np.stack(left, axis=0).astype(np.int16)
         graph['right'] = np.stack(right, axis=0).astype(np.int16)
 
-        # for k, v in graph.items():
-        #     # node_ctrs, node_vecs, lane_type, intersect, cross_left, cross_right, left, right
-        #     print(k, v.shape)
-
-        # # node - lane
+        # node - lane
         graph['num_nodes'] = graph['node_ctrs'].shape[0] * graph['node_ctrs'].shape[1]
         graph['num_lanes'] = graph['lane_ctrs'].shape[0]
-        # print('nodes: {}, lanes: {}'.format(graph['num_nodes'], graph['num_lanes']))
+
         return graph
 
     # plotters

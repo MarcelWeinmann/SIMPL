@@ -34,6 +34,8 @@ def parse_arguments() -> Any:
     parser.add_argument("--small", action="store_true", help="If true, a small subset of data is used.")
     parser.add_argument("--debug", action="store_true", help="If true, debug mode.")
     parser.add_argument("--viz", action="store_true", help="If true, viz.")
+    parser.add_argument('--use_raceline', action='store_true')
+    parser.add_argument('--use_raceline_velocity', action='store_true')
     return parser.parse_args()
 
 
